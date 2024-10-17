@@ -5,6 +5,7 @@ namespace IpCountryDetector\Http\Controllers;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use IpCountryDetector\Enums\CountryStatus;
 use IpCountryDetector\Services\IPCheckService;
 
 class IPCheckController extends Controller
@@ -19,6 +20,7 @@ class IPCheckController extends Controller
     /**
      * @throws Exception
      */
+
     public function checkIP(Request $request): array
     {
         $ipAddress = $request->input('ip')
@@ -26,23 +28,48 @@ class IPCheckController extends Controller
             ?? $request->ip();
 
         $timeZone = $request->input('timezone', 'UTC');
+        $countryStatus = CountryStatus::UNKNOWN;
 
         try {
-            $country = $ipAddress
-                ? $this->ipCheckService->ipToCountry($ipAddress)
-                : throw new \InvalidArgumentException('IP address is required');
+            if ($ipAddress) {
+                $country = $this->ipCheckService->ipToCountry($ipAddress, $timeZone);
+                $countryStatus = CountryStatus::SUCCESS;
+            } else {
+                $country = null;
+                $countryStatus = CountryStatus::IP_NOT_IN_RANGE;
+            }
         } catch (\Exception $e) {
             Log::warning("IP to Country failed, switching to timezone: {$e->getMessage()}");
-            $country = $this->ipCheckService->timeZoneToCountry($timeZone);
+            $country = null;
+            $countryStatus = CountryStatus::NOT_FOUND;
+        }
+
+        if (!$country) {
+            try {
+                $country = $this->ipCheckService->timeZoneToCountry($timeZone);
+            } catch (\Exception $e) {
+                Log::warning("TimeZone to Country failed: {$e->getMessage()}");
+                $country = 'Unknown';
+                $countryStatus = CountryStatus::NOT_FOUND;
+            }
         }
 
         if (empty($ipAddress) || $ipAddress === '127.0.0.1') {
-            return ['timezone' => $timeZone, 'country' => $country];
+            Log::info('Local IP or missing IP detected, using timezone and country fallback.');
+            return [
+                'timezone' => $timeZone,
+                'country' => $country,
+                'status' => $countryStatus->value
+            ];
         }
 
-        return ['ip' => $ipAddress ?? 'Unknown IP', 'country' => $country];
+        return [
+            'ip' => $ipAddress,
+            'timezone' => $timeZone,
+            'country' => $country,
+            'status' => $countryStatus->value
+        ];
     }
-
 
 
     /**
