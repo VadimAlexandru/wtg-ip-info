@@ -5,6 +5,7 @@ namespace IpCountryDetector\Services;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use IpCountryDetector\Enums\CountryStatus;
+use IpCountryDetector\Models\IpCountry;
 
 class IPCheckService
 {
@@ -21,8 +22,8 @@ class IPCheckService
     {
         try {
             $cachedCountry = $this->getCachedCountryOrFetch($ipAddress);
-            if ($cachedCountry) {
-                return CountryStatus::SUCCESS->value;
+            if (is_string($cachedCountry) && $cachedCountry) {
+                return $cachedCountry;
             }
 
             $ipLong = $this->validateAndConvertIp($ipAddress);
@@ -64,7 +65,7 @@ class IPCheckService
         $country = $this->fetchCountryFromApi($ipAddress);
         if ($country !== 'Country not found') {
             $this->ipCacheService->setCountryToCache($ipAddress, $country);
-            return CountryStatus::SUCCESS->value;
+            return $country;
         }
 
         return CountryStatus::NOT_FOUND->value;
@@ -84,17 +85,12 @@ class IPCheckService
 
     private function findCountryByIp(int $ipLong): string
     {
-        $result = \DB::table('ip_country')
-            ->where('first_ip', '<=', $ipLong)
+        $result = IpCountry::where('first_ip', '<=', $ipLong)
             ->where('last_ip', '>=', $ipLong)
             ->select('country')
             ->first();
 
-        if ($result) {
-            return CountryStatus::SUCCESS->value;
-        }
-
-        return CountryStatus::IP_NOT_IN_RANGE->value;
+        return $result ? $result->country : CountryStatus::IP_NOT_IN_RANGE->value;
     }
 
     private function fetchCountryFromApi(string $ipAddress): string

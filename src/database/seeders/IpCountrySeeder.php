@@ -1,18 +1,17 @@
 <?php
 
-namespace IpCountryDetector\Seeders;
+namespace seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use IpCountryDetector\Models\IpCountry;
 use IpCountryDetector\Services\CsvFilePathService;
-use Throwable;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Throwable;
 
 class IpCountrySeeder extends Seeder
 {
-    protected string $tableName = 'ip_country';
-
     protected CsvFilePathService $csvFilePathService;
 
     /**
@@ -64,7 +63,7 @@ class IpCountrySeeder extends Seeder
                     ];
 
                     if (count($batch) >= $batchSize) {
-                        DB::table($this->tableName)->insertOrIgnore($batch);
+                        IpCountry::insertOrIgnore($batch);
                         $batch = [];
                     }
 
@@ -84,7 +83,7 @@ class IpCountrySeeder extends Seeder
                 }
 
                 if (!empty($batch)) {
-                    DB::table($this->tableName)->insertOrIgnore($batch);
+                    IpCountry::insertOrIgnore($batch);
                 }
 
                 fclose($handle);
