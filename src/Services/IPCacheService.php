@@ -17,9 +17,9 @@ class IPCacheService
         return $this->cacheService->get($this->getCacheKey($ipAddress));
     }
 
-    public function setCountryToCache(string $ipAddress, string $country): void
+    public function setCountryToCache(string $ipAddress, array $country): void
     {
-        $this->cacheService->set($this->getCacheKey($ipAddress), $country);
+        $this->cacheService->set($this->getCacheKey($ipAddress), json_encode($country));
     }
 
     private function getCacheKey(string $ipAddress): string

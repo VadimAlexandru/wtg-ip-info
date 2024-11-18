@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use IpCountryDetector\Database\Seeders\IpCountrySeeder;
 use IpCountryDetector\Services\CsvFilePathService;
 use Throwable;
 
@@ -16,7 +17,7 @@ class InstallIpCountryDetectorCommand extends Command
     protected $description = 'Install the IP Country Detector package, update IP database, and seed the data.';
     protected CsvFilePathService $csvFilePathService;
 
-    private const CSV_URL = 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country/asn-country-ipv4.csv';
+    private const CSV_URL = 'https://github.com/sapics/ip-location-db/raw/refs/heads/main/geolite2-city/geolite2-city-ipv4-num.csv.gz';
 
     public function __construct(CsvFilePathService $csvFilePathService)
     {
@@ -30,7 +31,6 @@ class InstallIpCountryDetectorCommand extends Command
 
         sleep(2);
 
-
         try {
             $storageFilePath = $this->csvFilePathService->getCsvFilePath();
 
@@ -42,8 +42,13 @@ class InstallIpCountryDetectorCommand extends Command
                 $response = Http::get(self::CSV_URL);
 
                 if ($response->ok()) {
-                    $this->csvFilePathService->putCsvFile($response);
-                    $this->info('CSV file downloaded successfully.');
+                    $csvContent = $this->csvFilePathService->putAndExtractCsvFile($response);
+                    if ($csvContent) {
+                        $this->info('CSV file downloaded and extracted successfully.');
+                    } else {
+                        $this->error('Failed to extract CSV file.');
+                        return 1;
+                    }
                 } else {
                     $this->error('Failed to download CSV file.');
                     return 1;
@@ -53,15 +58,15 @@ class InstallIpCountryDetectorCommand extends Command
             }
 
             $this->info('Preparing file for migration...');
-
             sleep(2);
 
             $this->call('migrate');
 
             $this->info('Preparing file for data import...');
             sleep(2);
+
             Artisan::call('db:seed', [
-                '--class' => 'database\seeders\IpCountrySeeder',
+                '--class' => 'IpCountryDetector\database\seeders\IpCountrySeeder',
             ]);
 
             $this->info('Database seeded successfully.');

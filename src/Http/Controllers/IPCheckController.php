@@ -5,6 +5,7 @@ namespace IpCountryDetector\Http\Controllers;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 use IpCountryDetector\Enums\CountryStatus;
 use IpCountryDetector\Services\IPCheckService;
 
@@ -34,7 +35,6 @@ class IPCheckController extends Controller
         try {
             if (empty($ipAddress) || $ipAddress === '127.0.0.1' || $ipAddress === '::1') {
                 Log::info('Local IP or missing IP detected, using timezone and country fallback.');
-                // Використовуємо таймзону для визначення країни
                 $country = $this->ipCheckService->timeZoneToCountry($timeZone);
                 $countryStatus = $country ? CountryStatus::IP_NOT_IN_RANGE : CountryStatus::NOT_FOUND;
             } else {
@@ -47,13 +47,18 @@ class IPCheckController extends Controller
             $countryStatus = CountryStatus::NOT_FOUND;
         }
 
-
         return [
             'ip' => $ipAddress,
+            'country' => $country['country'] ?? 'Unknown',
+            'region' => $country['region'] ?? 'Unknown',
+            'subregion' => $country['subregion'] ?? 'Unknown',
+            'city' => $country['city'] ?? 'Unknown',
             'timezone' => $timeZone,
-            'country' => $country ?? 'Unknown',
+            'latitude' => $country['latitude'] ?? 'Unknown',
+            'longitude' => $country['longitude'] ?? 'Unknown',
             'status' => $countryStatus->value
         ];
+
     }
 
 }

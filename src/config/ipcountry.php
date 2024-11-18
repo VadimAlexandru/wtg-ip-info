@@ -7,6 +7,6 @@ return [
         'database' => env('IPCOUNTRY_REDIS_DATABASE', null),
         'password' => env('IPCOUNTRY_REDIS_PASSWORD', null),
         'prefix' => env('IPCOUNTRY_REDIS_PREFIX', 'ip_country'),
-    ],
+    ]
 ];
 
