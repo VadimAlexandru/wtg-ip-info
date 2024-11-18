@@ -4,7 +4,6 @@ namespace IpCountryDetector;
 
 use Illuminate\Support\ServiceProvider;
 use IpCountryDetector\Console\InstallIpCountryDetectorCommand;
-use IpCountryDetector\Database\Seeders\IpCountrySeeder;
 use IpCountryDetector\Services\Interfaces\IpCountryServiceInterface;
 use IpCountryDetector\Services\IpApiService;
 
