@@ -41,125 +41,78 @@ class IpCountrySeeder extends Seeder
 
         $csvFilePath = $this->csvFilePathService->getCsvFilePath();
         $this->logMessage('info', "CSV file path: $csvFilePath");
-        sleep(5);
 
-        if (!$handle = fopen($csvFilePath, 'r')) {
-            $this->logMessage('error', "Unable to open CSV file: $csvFilePath");
+        if (!file_exists($csvFilePath)) {
+            $this->logMessage('error', "CSV file not found: $csvFilePath");
             return;
         }
 
-
         try {
-            $this->logMessage('info', "Converting CSV to SQL dump...");
+            $dataRows = [];
+            $rowCount = 0;
 
-            $sqlDumpPath = storage_path('app/ip_country_dump.sql');
-            $this->convertCsvToSql($csvFilePath, $sqlDumpPath);
+            if (($handle = fopen($csvFilePath, 'r')) === false) {
+                throw new Exception("Unable to open CSV file: $csvFilePath");
+            }
 
-            $this->logMessage('info', "SQL dump created at: $sqlDumpPath");
-            $this->logMessage('info', "Starting SQL dump import...");
+            fgetcsv($handle, 1000, ",");
 
-            $this->importSqlDump($sqlDumpPath);
+            $this->logMessage('info', "Reading and processing CSV file...");
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                $dataRows[] = $data;
+            }
 
-            $this->logMessage('info', "SQL dump imported successfully.");
+            fclose($handle);
+
+            usort($dataRows, fn($a, $b) => strcmp($a[2], $b[2]));
+
+            $totalRows = count($dataRows);
+
+            foreach ($dataRows as $data) {
+                [$firstIp, $lastIp, $country, $region, $subregion, $city, , $latitude, $longitude, $timezone] = $data;
+
+                $record = [
+                    'first_ip' => $this->convertIpToNumeric($firstIp),
+                    'last_ip' => $this->convertIpToNumeric($lastIp),
+                    'country' => $country,
+                    'region' => $region,
+                    'subregion' => $subregion,
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'city' => $city,
+                    'timezone' => $timezone,
+                ];
+
+                // Додаємо до таблиці
+                IpCountry::insertOrIgnore($record);
+
+                $rowCount++;
+                $percentage = ($rowCount / $totalRows) * 100;
+
+                $this->logMessage('info', sprintf(
+                    "[%6.2f%% | %6d / %6d] - Country: [%2s] - IP Range: [%15s - %15s] - Region: [%s] - Subregion: [%s] - City: [%s]",
+                    $percentage,
+                    $rowCount,
+                    $totalRows,
+                    $country,
+                    str_pad($firstIp, 15, " ", STR_PAD_RIGHT),
+                    str_pad($lastIp, 15, " ", STR_PAD_RIGHT),
+                    $region,
+                    $subregion,
+                    $city
+                ));
+            }
+
+            $this->logMessage('info', "CSV file processed successfully. Total rows: $totalRows");
         } catch (Throwable $e) {
             $this->logMessage('error', "Failed to process CSV file: {$e->getMessage()}");
         }
     }
 
+
     /**
      * @throws Exception
      */
-    private function convertCsvToSql(string $csvFilePath, string $sqlDumpPath): void
-    {
-        $handle = null;
-        $sqlDump = null;
-
-        try {
-            $handle = fopen($csvFilePath, 'r');
-            if (!$handle) {
-                throw new Exception("Unable to open CSV file: $csvFilePath");
-            }
-
-            $sqlDump = fopen($sqlDumpPath, 'w');
-            if (!$sqlDump) {
-                throw new Exception("Unable to create SQL dump file: $sqlDumpPath");
-            }
-
-            fgetcsv($handle, 1000, ",");
-
-            fwrite($sqlDump, "INSERT INTO `ip_country` (`first_ip`, `last_ip`, `country`, `region`, `subregion`, `city`, `latitude`, `longitude`, `timezone`) VALUES\n");
-
-            $isFirstRow = true;
-            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-                [$firstIp, $lastIp, $country, $region, $subregion, $city, , $latitude, $longitude, $timezone] = $data;
-
-                $values = sprintf(
-                    "(%s, %s, '%s', '%s', '%s', '%s', %s, %s, '%s')",
-                    $this->convertIpToNumeric($firstIp),
-                    $this->convertIpToNumeric($lastIp),
-                    addslashes($country),
-                    addslashes($region),
-                    addslashes($subregion),
-                    addslashes($city),
-                    $latitude,
-                    $longitude,
-                    addslashes($timezone)
-                );
-
-                fwrite($sqlDump, "\n-- Inserting row: $firstIp - $lastIp\n");
-                fwrite($sqlDump, ($isFirstRow ? "" : ",\n") . $values);
-                $isFirstRow = false;
-            }
-
-            fwrite($sqlDump, ";\n");
-        } finally {
-            if ($handle) {
-                fclose($handle);
-            }
-            if ($sqlDump) {
-                fclose($sqlDump);
-            }
-        }
-    }
-
-    private function importSqlDump(string $sqlDumpPath): void
-    {
-        $database = config('database.connections.mysql.database');
-        $host = config('database.connections.mysql.host');
-        $username = config('database.connections.mysql.username');
-        $password = config('database.connections.mysql.password');
-
-        DB::statement("SET GLOBAL max_allowed_packet = 512 * 1024 * 1024");
-
-        $this->logMessage('info', "Set max_allowed_packet to 512 MB temporally");
-
-        $command = [
-            'mysql',
-            '--host=' . $host,
-            '--user=' . $username,
-            '--password=' . $password,
-            '--verbose',
-            $database,
-        ];
-
-        $process = new Process($command);
-        $process->setInput(file_get_contents($sqlDumpPath));
-        $process->setTimeout(3600);
-
-        $process->run(function ($type, $data) {
-            if ($type === Process::OUT) {
-                if (stripos($data, 'Query OK') !== false || stripos($data, 'INSERT') !== false) {
-                    $this->logMessage('info', "Imported: " . trim($data));
-                }
-            } else {
-                $this->logMessage('error', trim($data));
-            }
-        });
-
-        if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
-    }
 
     function convertIpToNumeric($ip): float|int|string
     {
