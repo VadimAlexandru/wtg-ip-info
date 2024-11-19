@@ -33,12 +33,6 @@ class IpCountrySeeder extends Seeder
 
     public function run(): void
     {
-        IpCountry::truncate();
-        $this->logMessage('info', "Table 'ip_country' has been cleared.");
-
-        Artisan::call('migrate');
-        $this->logMessage('info', "Database migrations have been run.");
-
         $csvFilePath = $this->csvFilePathService->getCsvFilePath();
         $this->logMessage('info', "CSV file path: $csvFilePath");
 
@@ -46,6 +40,12 @@ class IpCountrySeeder extends Seeder
             $this->logMessage('error', "CSV file not found: $csvFilePath");
             return;
         }
+
+        IpCountry::truncate();
+        $this->logMessage('info', "Table 'ip_country' has been cleared.");
+
+        Artisan::call('migrate');
+        $this->logMessage('info', "Database migrations have been run.");
 
         try {
             $dataRows = [];
