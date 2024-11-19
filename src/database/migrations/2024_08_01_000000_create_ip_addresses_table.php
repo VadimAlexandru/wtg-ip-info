@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use IpCountryDetector\Models\IpCountry;
 
 class CreateIpAddressesTable extends Migration
 {
@@ -13,8 +14,8 @@ class CreateIpAddressesTable extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('ip_country')) {
-            Schema::create('ip_country', function (Blueprint $table) {
+        if (!Schema::hasTable(IpCountry::TABLE)) {
+            Schema::create(IpCountry::TABLE, function (Blueprint $table) {
                 $table->id();
                 $table->bigInteger('first_ip');
                 $table->bigInteger('last_ip');
@@ -32,6 +33,6 @@ class CreateIpAddressesTable extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ip_country');
+        Schema::dropIfExists(IpCountry::TABLE);
     }
 }

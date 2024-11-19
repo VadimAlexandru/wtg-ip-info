@@ -16,7 +16,7 @@ class InstallIpCountryDetectorCommand extends Command
     protected $description = 'Install the IP Country Detector package, update IP database, and seed the data.';
     protected CsvFilePathService $csvFilePathService;
 
-    private const CSV_URL = 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country/asn-country-ipv4.csv';
+    private const CSV_URL = 'https://github.com/sapics/ip-location-db/raw/refs/heads/main/geolite2-city/geolite2-city-ipv4-num.csv.gz';
 
     public function __construct(CsvFilePathService $csvFilePathService)
     {
@@ -61,7 +61,7 @@ class InstallIpCountryDetectorCommand extends Command
             $this->info('Preparing file for data import...');
             sleep(2);
             Artisan::call('db:seed', [
-                '--class' => 'database\seeders\IpCountrySeeder',
+                '--class' => 'IpCountryDetector\database\seeders\IpCountrySeeder',
             ]);
 
             $this->info('Database seeded successfully.');

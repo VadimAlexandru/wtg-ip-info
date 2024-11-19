@@ -34,7 +34,6 @@ class IPCheckController extends Controller
         try {
             if (empty($ipAddress) || $ipAddress === '127.0.0.1' || $ipAddress === '::1') {
                 Log::info('Local IP or missing IP detected, using timezone and country fallback.');
-                // Використовуємо таймзону для визначення країни
                 $country = $this->ipCheckService->timeZoneToCountry($timeZone);
                 $countryStatus = $country ? CountryStatus::IP_NOT_IN_RANGE : CountryStatus::NOT_FOUND;
             } else {

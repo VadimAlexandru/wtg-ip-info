@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class IpCountry extends Model
 {
-    protected $table = 'ip_country';
+    public const TABLE = 'ip_country';
+
+    protected $table = self::TABLE;
 
     protected $fillable = [
         'first_ip',
