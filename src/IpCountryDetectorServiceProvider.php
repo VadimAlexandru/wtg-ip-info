@@ -23,7 +23,7 @@ class IpCountryDetectorServiceProvider extends ServiceProvider
             __DIR__ . '/config/ipcountry.php' => config_path('ipcountry.php'),
         ], 'config');
 
-        $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
 
         if ($this->app->runningInConsole()) {
             $this->commands([

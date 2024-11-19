@@ -41,14 +41,8 @@ class IpCountrySeeder extends Seeder
             return;
         }
 
-        $updateMode = getenv('IP_COUNTRY_UPDATE') === 'true';
-
-        if ($updateMode) {
-            $this->logMessage('info', "Update mode enabled: existing data will be updated or new data added.");
-        } else {
-            IpCountry::truncate();
-            $this->logMessage('info', "Table 'ip_country' has been cleared.");
-        }
+        IpCountry::truncate();
+        $this->logMessage('info', "Table 'ip_country' has been cleared.");
 
         Artisan::call('migrate');
         $this->logMessage('info', "Database migrations have been run.");
