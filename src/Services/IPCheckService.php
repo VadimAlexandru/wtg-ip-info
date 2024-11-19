@@ -18,17 +18,18 @@ class IPCheckService
         $this->ipApiService = $ipApiService;
     }
 
-    public function ipToCountry(string $ipAddress = null, string $timeZone = 'UTC'): string|array|object
+    public function ipToCountry(string $ipAddress = null, string $timeZone = null): string
     {
         try {
             $cachedCountry = $this->getCachedCountryOrFetch($ipAddress);
             if (is_string($cachedCountry) && $cachedCountry) {
-                return json_decode($cachedCountry, true);
+                return $cachedCountry;
             }
 
             $ipLong = $this->validateAndConvertIp($ipAddress);
+
             $country = $this->findCountryByIp($ipLong);
-            if (!empty($country) && $country !== CountryStatus::IP_NOT_IN_RANGE->value) {
+            if ($country != CountryStatus::IP_NOT_IN_RANGE->value) {
                 $this->ipCacheService->setCountryToCache($ipAddress, $country);
                 return $country;
             }
@@ -37,7 +38,7 @@ class IPCheckService
         } catch (\Exception $e) {
             Log::error('Error determining country by IP: ' . $e->getMessage());
 
-            return $this->timeZoneToCountry($timeZone) ?? CountryStatus::UNKNOWN;
+            return $this->timeZoneToCountry($timeZone) ?? CountryStatus::UNKNOWN->value;
         }
     }
 
@@ -59,7 +60,7 @@ class IPCheckService
         return $cachedCountry ?: null;
     }
 
-    private function fetchCountryAndCache(string $ipAddress): array|string
+    private function fetchCountryAndCache(string $ipAddress): string
     {
         $country = $this->fetchCountryFromApi($ipAddress);
         if ($country !== 'Country not found') {
@@ -70,7 +71,7 @@ class IPCheckService
         return CountryStatus::NOT_FOUND->value;
     }
 
-    public function timeZoneToCountry(string $timeZone): array|string
+    public function timeZoneToCountry(string $timeZone): string
     {
         try {
             $timezone = new \DateTimeZone($timeZone);
@@ -82,16 +83,17 @@ class IPCheckService
         }
     }
 
-    private function findCountryByIp(int $ipLong): array|int|IpCountry
+    private function findCountryByIp(int $ipLong): string
     {
-        $result = IpCountry::select('country', 'region', 'subregion', 'city', 'timezone', 'latitude', 'longitude')
-            ->where('first_ip', '<=', $ipLong)
+        $result = IpCountry::where('first_ip', '<=', $ipLong)
             ->where('last_ip', '>=', $ipLong)
+            ->select('country')
             ->first();
-        return $result ? $result->toArray() : CountryStatus::IP_NOT_IN_RANGE->value;
+
+        return $result ? $result->country : CountryStatus::IP_NOT_IN_RANGE->value;
     }
 
-    private function fetchCountryFromApi(string $ipAddress): string|array
+    private function fetchCountryFromApi(string $ipAddress): string
     {
         return $this->ipApiService->getCountry($ipAddress);
     }
