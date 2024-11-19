@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static where(string $string, string $string1, int $ipLong)
  * @method static insertOrIgnore(array $batch)
  * @method static truncate()
+ * @method static updateOrCreate(array $array, array $record)
  */
 class IpCountry extends Model
 {
