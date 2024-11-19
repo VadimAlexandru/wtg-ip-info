@@ -83,14 +83,7 @@ class IpCountrySeeder extends Seeder
                     'timezone' => $timezone,
                 ];
 
-                if ($updateMode) {
-                    IpCountry::updateOrCreate(
-                        ['first_ip' => $record['first_ip'], 'last_ip' => $record['last_ip']],
-                        $record
-                    );
-                } else {
-                    IpCountry::insertOrIgnore($record);
-                }
+                IpCountry::insertOrIgnore($record);
 
                 $rowCount++;
                 $percentage = ($rowCount / $totalRows) * 100;
