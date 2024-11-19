@@ -65,8 +65,6 @@ class InstallIpCountryDetectorCommand extends Command
             $this->info('Preparing file for data import...');
             sleep(2);
 
-            putenv('IP_COUNTRY_UPDATE=' . ($this->option('update') ? 'true' : 'false'));
-
             Artisan::call('db:seed', [
                 '--class' => 'IpCountryDetector\database\seeders\IpCountrySeeder',
             ]);
