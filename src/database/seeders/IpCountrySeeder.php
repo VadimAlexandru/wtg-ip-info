@@ -40,9 +40,13 @@ class IpCountrySeeder extends Seeder
             $this->logMessage('error', "CSV file not found: $csvFilePath");
             return;
         }
-
-        IpCountry::truncate();
-        $this->logMessage('info', "Table 'ip_country' has been cleared.");
+        $updateMode = Artisan::output()->contains('--update');
+        if ($updateMode) {
+            $this->logMessage('info', "Update mode enabled: existing data will be updated or new data added.");
+        } else {
+            IpCountry::truncate();
+            $this->logMessage('info', "Table 'ip_country' has been cleared.");
+        }
 
         Artisan::call('migrate');
         $this->logMessage('info', "Database migrations have been run.");

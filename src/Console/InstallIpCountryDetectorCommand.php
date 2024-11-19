@@ -12,7 +12,7 @@ use Throwable;
 
 class InstallIpCountryDetectorCommand extends Command
 {
-    protected $signature = 'ip-country-detector:install';
+    protected $signature = 'ip-country-detector:install {--update : Update existing IP country data without truncating the table}';
 
     protected $description = 'Install the IP Country Detector package, update IP database, and seed the data.';
     protected CsvFilePathService $csvFilePathService;
@@ -67,6 +67,7 @@ class InstallIpCountryDetectorCommand extends Command
 
             Artisan::call('db:seed', [
                 '--class' => 'IpCountryDetector\database\seeders\IpCountrySeeder',
+                '--update' => $this->option('update'),
             ]);
 
             $this->info('Database seeded successfully.');
