@@ -83,7 +83,6 @@ class IpCountrySeeder extends Seeder
                     'timezone' => $timezone,
                 ];
 
-                // Додаємо до таблиці
                 IpCountry::insertOrIgnore($record);
 
                 $rowCount++;
