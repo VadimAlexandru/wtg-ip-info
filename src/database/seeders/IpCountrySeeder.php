@@ -40,7 +40,9 @@ class IpCountrySeeder extends Seeder
             $this->logMessage('error', "CSV file not found: $csvFilePath");
             return;
         }
-        $updateMode = Artisan::output()->contains('--update');
+
+        $updateMode = getenv('IP_COUNTRY_UPDATE') === 'true';
+
         if ($updateMode) {
             $this->logMessage('info', "Update mode enabled: existing data will be updated or new data added.");
         } else {
