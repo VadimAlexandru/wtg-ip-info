@@ -26,9 +26,7 @@ class IPCheckService
                 return $cachedCountry;
             }
 
-            $ipLong = $this->validateAndConvertIp($ipAddress);
-
-            $country = $this->findCountryByIp($ipLong);
+            $country = $this->findCountryByIp($ipAddress);
             if ($country != CountryStatus::IP_NOT_IN_RANGE->value) {
                 $this->ipCacheService->setCountryToCache($ipAddress, $country);
                 return $country;
@@ -46,12 +44,12 @@ class IPCheckService
     {
         if (!filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) &&
             !filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            throw new \InvalidArgumentException('Invalid IP address');
+            return false;
         }
 
         return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
             ? ip2long($ipAddress)
-            : $ipAddress;
+            : false;
     }
 
     private function getCachedCountryOrFetch(string $ipAddress): ?string
@@ -83,8 +81,14 @@ class IPCheckService
         }
     }
 
-    private function findCountryByIp(int $ipLong): string
+    private function findCountryByIp($ipAddress): int|string
     {
+        $ipLong = $this->validateAndConvertIp($ipAddress);
+
+        if (!$ipLong) {
+            return $ipLong;
+        }
+
         $result = IpCountry::where('first_ip', '<=', $ipLong)
             ->where('last_ip', '>=', $ipLong)
             ->select('country')
