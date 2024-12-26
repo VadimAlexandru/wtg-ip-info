@@ -29,7 +29,7 @@ class IPCheckService
             $ipLong = $this->validateAndConvertIp($ipAddress);
 
             if (!$ipLong) {
-                return false;
+                return $ipLong;
             }
 
             $country = $this->findCountryByIp($ipLong);
@@ -50,7 +50,7 @@ class IPCheckService
     {
         if (!filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) &&
             !filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            throw new \InvalidArgumentException('Invalid IP address');
+            return false;
         }
 
         return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
