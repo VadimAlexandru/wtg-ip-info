@@ -28,6 +28,10 @@ class IPCheckService
 
             $ipLong = $this->validateAndConvertIp($ipAddress);
 
+            if (!$ipLong) {
+                return false;
+            }
+
             $country = $this->findCountryByIp($ipLong);
             if ($country != CountryStatus::IP_NOT_IN_RANGE->value) {
                 $this->ipCacheService->setCountryToCache($ipAddress, $country);
@@ -51,7 +55,7 @@ class IPCheckService
 
         return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
             ? ip2long($ipAddress)
-            : $ipAddress;
+            : false;
     }
 
     private function getCachedCountryOrFetch(string $ipAddress): ?string
